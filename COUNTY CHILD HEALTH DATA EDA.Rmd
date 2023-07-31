@@ -1,0 +1,592 @@
+---
+title: "CEMA INTERNSHIP TASK"
+author: "ADERO WALTER OBILA"
+date: "2023-07-19"
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+```
+
+```{r, message=FALSE,warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(data.table)
+library(janitor)
+library(lubridate)
+```
+
+
+```{r}
+#Importing the data
+library(readr)
+data <- read_csv("C:/Users/Admin/Desktop/CEMA/cema_internship_task_2023.csv")
+head(data)
+```
+# Exploratory Data Analysis
+## Structure of the data
+```{r}
+str(data)
+```
+The dataset consists of 11 variables(columns), and 1410 instances(rows). The variables are a mixture of numeric and character variables. The character variables are period and county, while all the remaininng variables are numeric variables.
+
+## Checking for duplicated values
+```{r}
+#Checking for duplicate values
+unique(duplicated(data))
+```
+The data contains no duplicated values.
+
+## Missing observations
+```{r}
+sum(is.na(data))
+```
+
+The data has 339 missing entries.
+### Visualizing the distribution of missing observations
+```{r}
+library(naniar)
+vis_miss(data)
+library(UpSetR)
+gg_miss_upset(data)
+gg_miss_var(data, show_pct = TRUE, facet = county)+labs(y="Percentage of Missing Observations")
+```
+
+From the plots above, it is evident that the "Acute Malnutrition" variable has the highest occurences of missing values, accounting for 25.18% of all missin gobservatios i the data.  
+A deeper dive to investigate the missing values by county shows that Bomet, Busia, Elgeyo Marakwet, Kericho, Kirinyaga, Kisii, Lamu, Nandi, Nyamira, Nyandarua, Siaya, Taita Taveta and Uasin Gishu counties had alarmingly high percentages for missing values for the "Acute Malnutrition" variable, with missing values being realized in close to or even exceedig 50%.  
+Imputation, whether mean, mode, nearest neighbours etc, does not seem to be the best idea, as in some cases there are absolutely no entries for the "Acute Malnutrition" variable. Imputing in such like cases will lead to misinformation.
+
+## Summary of the numerical Variables
+```{r}
+summary(data[,-c(1,2)])
+```
+Here, we see some summary statiscitcs for the numerical variables in the data. The summary statistics provided are minimum, 1st quartile, median, mean, 3rd quartile and maximum. Taking for instance the "Total Dewormed" variable, we see that the minimum entry is 97, the meadian is 4564, the mean 11458 and the maximum entry is 392800.
+
+## Exploring the correlations between the numerical variables
+```{r}
+corl<-cor(na.omit(data[,-c(1,2)]))
+corl
+library(corrplot)
+corrplot(corl)
+```
+
+The two most highly correlated variables are "Underweight 6-23 months" and "stunted 6-23 months", with a correlation coefficient of 0.80521446. The correlations between the variables vary by degree, but we have no two variables being inversely correlated.
+
+##Plotting scatterplots for the variables-pairwise.
+```{r}
+pairs(data[,-c(1,2)])
+```
+The scatter plots further depict the relationships between the variables. It is evident that the variables have direct relationships with each other, albeit to varying degrees.
+
+## Examining the distributions of the numeric variables
+### Total Dewormed
+```{r}
+summary(data$`Total Dewormed`)
+ggplot(data,aes(x=`Total Dewormed`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`Total Dewormed`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`Total Dewormed`, color=county))+geom_boxplot()+labs(title="Distribution of Total Dewormed", x="County", y="Total Dewormed")+facet_wrap(~county)
+
+```
+The minimum entry for the total dewormed variable is 97, with a median of 4564, mean of 11458, and maximum of 392800.
+From the histograms, we can see that the total number of dewormed children is skewed to the right.
+The boxplots indicate that the numbers for "Total Dewormed" are largely concentrated in the relatively lower end of the spectrum, with very fer extreme outliers.
+
+### Acute Malnutrition
+```{r}
+summary(data$`Acute Malnutrition`)
+ggplot(data,aes(x=`Acute Malnutrition`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`Acute Malnutrition`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`Acute Malnutrition`, color=county))+geom_boxplot()+labs(title="Distribution of Acute Malnutrition", x="County", y="Acute Malnutrition")+facet_wrap(~county)
+
+```
+The minimum entry for the acute malnutrition variable is 1, with a median of 39, mean of 125.4, and maximum of 4123.
+From the histograms, we can see that the total number of children with acute malnutrition is skewed to the right.
+The boxplots indicate that the numbers for "acute malnutrition" are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers.
+
+
+### stunted 6-23 months
+```{r}
+summary(data$`stunted 6-23 months`)
+ggplot(data,aes(x=`stunted 6-23 months`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`stunted 6-23 months`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`stunted 6-23 months`, color=county))+geom_boxplot()+labs(title="Distribution of stunted 6-23 months", x="County", y="stunted 6-23 months")+facet_wrap(~county)
+```
+
+The minimum entry for the stunted 6-23 months variable is 1, with a median of 159, mean of 280.2, and maximum of 4398.
+From the histograms, we can see that the total number of children with stunted growth between 6-23 months is skewed to the right.
+The boxplots indicate that the numbers for "stunted 6-23 months" are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers.
+
+### stunted 0-<6 months
+```{r}
+summary(data$`stunted 0-<6 months`)
+ggplot(data,aes(x=`stunted 0-<6 months`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`stunted 0-<6 months`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`stunted 0-<6 months`, color=county))+geom_boxplot()+labs(title="Distribution of stunted 0-<6 months", x="County", y="stunted 0-<6 months")+facet_wrap(~county)
+```
+
+The minimum entry for the stunted 0-<6 months variable is 1, with a median of 84, mean of 139.8, and maximum of 7900.
+From the histograms, we can see that the total number of children with stunted growth between 0-<6 months is skewed to the right.
+The boxplots indicate that the numbers for "stunted 0-<6 months" are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers.
+
+### stunted 24-59 months
+```{r}
+summary(data$`stunted 24-59 months`)
+ggplot(data,aes(x=`stunted 24-59 months`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`stunted 24-59 months`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`stunted 24-59 months`, color=county))+geom_boxplot()+labs(title="Distribution of stunted 24-59 months", x="County", y="stunted 24-59 months")+facet_wrap(~county)
+```
+
+The minimum entry for the stunted 24-59 months variable is 1, with a median of 50, mean of 110.8, and maximum of 3169.
+From the histograms, we can see that the total number of children with stunted growth between 24-59 months is skewed to the right.
+The boxplots indicate that the numbers for "stunted 24-59 months" are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers.
+
+### diarrhoea cases
+```{r}
+summary(data$`diarrhoea cases`)
+ggplot(data,aes(x=`diarrhoea cases`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`diarrhoea cases`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`diarrhoea cases`, color=county))+geom_boxplot()+labs(title="Distribution of diarrhoea cases", x="County", y="diarrhoea cases")+facet_wrap(~county)
+```
+
+The minimum entry for the diarrhoea variable is 198, with a median of 52158, mean of 2813, and maximum of 15795.
+From the histograms, we can see that the total number of diarrhoea cases reported is skewed to the right.
+The boxplots indicate that the numbers for "diarrhoea cases " are largely concentrated in the relatively lower end of the spectrum, except for counties such as Kilifi, Kajiado, Mandera, Mombasa, Turkana and Uasin Gishu.
+
+### Underweight 0-<6 months
+```{r}
+summary(data$`Underweight 0-<6 months`)
+ggplot(data,aes(x=`Underweight 0-<6 months`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`Underweight 0-<6 months`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`Underweight 0-<6 months`, color=county))+geom_boxplot()+labs(title="Distribution of Underweight 0-<6 months", x="County", y="Underweight 0-<6 months")+facet_wrap(~county)
+```
+
+The minimum entry for the Underweight 0-<6 months variable is 6, with a median of 162.5, mean of 223.5, and maximum of 1937.
+From the histograms, we can see that the total number of underweight children between 0-<6 months reported is skewed to the right.
+The boxplots indicate that the numbers for "Underweight 0-<6 months " are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers.
+
+
+### Underweight 6-23 months
+```{r}
+summary(data$`Underweight 6-23 months`)
+ggplot(data,aes(x=`Underweight 6-23 months`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`Underweight 6-23 months`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`Underweight 6-23 months`, color=county))+geom_boxplot()+labs(title="Distribution of Underweight 6-23 months", x="County", y="Underweight 6-23 months")+facet_wrap(~county)
+```
+
+The minimum entry for the Underweight 6-23 months variable is 16, with a median of 456, mean of 652.3, and maximum of 5348.
+From the histograms, we can see that the total number of underweight children between 6-23 months reported is skewed to the right.
+The boxplots indicate that the numbers for "Underweight 6-23 months " are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers. Incidences in Naairobi and Turkana counties, however, seem to be differently distributed relative to other countries, with higher numbers.
+
+### Underweight 24-59 Months
+```{r}
+summary(data$`Underweight 24-59 Months`)
+ggplot(data,aes(x=`Underweight 24-59 Months`))+geom_histogram(fill="blue")
+ggplot(data,aes(x=`Underweight 24-59 Months`))+geom_histogram(aes(fill="red"))+facet_wrap(~county)
+ggplot(data, aes(y=`Underweight 24-59 Months`, color=county))+geom_boxplot()+labs(title="Distribution of Underweight 24-59 Months", x="County", y="Underweight 24-59 Months")+facet_wrap(~county)
+```
+
+The minimum entry for the Underweight 24-59 Months variable is 1, with a median of 120.5, mean of 305.74, and maximum of 4680.
+From the histograms, we can see that the total number of underweight children between 6-23 months reported is skewed to the right.
+The boxplots indicate that the numbers for "Underweight 24-59 Months " are largely concentrated in the relatively lower end of the spectrum, with very few extreme outliers. Incidences in Garissa,Kajiado, Marsabit, Wajir and Turkana counties, however, seem to be differently distributed relative to other countries, with higher numbers.
+
+
+## Examining the factor variables
+### Converting to factor
+```{r}
+data$county<-as.factor(data$county)
+```
+
+### Generating columns for month and year
+```{r}
+data <- data %>%mutate(month_num = month(parse_date_time(period, "my")),month = month.abb[month_num],year = year(parse_date_time(period, "my")))
+data <- data %>%select(-month_num)
+```
+
+### Investigating the year on year trends of numerical variables
+#### Total Dewormed
+```{r}
+yr<-data%>%group_by(year)%>%summarise("Total Dewormed"=sum(`Total Dewormed`),"Diarrhoea Cases"=sum(`diarrhoea cases`),"Total underweight 0-<6 months"=sum(`Underweight 0-<6 months`), "Total  Underweight 6-23 monnths"=sum(`Underweight 6-23 months`), "Total underweight 24-59 months"=sum(`Underweight 24-59 Months`), "Total Acute Malnutrition"=sum(`Acute Malnutrition`, na.rm=TRUE),"Total Stunted 6-23 Months"=sum(`stunted 6-23 months`,na.rm=TRUE), "Total Stunted 0-<6 months"=sum(`stunted 0-<6 months`, na.rm=TRUE), "Total Stunted 24-59 Months"=sum(`stunted 24-59 months`, na.rm=TRUE))
+data.table(yr)
+yr<-yr[order(yr$year),]
+ggplot(yr, aes(x=year,y=`Total Dewormed`, fill=year))+geom_bar(stat = "identity")
+```
+The total number of children dewormed increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total Diarrhoea Cases
+```{r}
+ggplot(yr, aes(x=year,y=`Diarrhoea Cases`, fill=year))+geom_bar(stat = "identity")
+```
+The total number of diarrhoea cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total Acute Malnutrition Cases Cases
+```{r}
+ggplot(yr, aes(x=year,y=`Total Acute Malnutrition`, fill=year))+geom_bar(stat = "identity")
+```
+The total number of acute malnutrition cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total Stunted 6-23 Months Cases
+```{r}
+ggplot(yr, aes(x=year,y=`Total Stunted 6-23 Months`, fill=year))+geom_bar(stat = "identity")
+```
+
+The total number of Stunted 6-23 Months cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total Stunted 0-<6 months Cases
+```{r}
+ggplot(yr, aes(x=year,y=`Total Stunted 0-<6 months`, fill=year))+geom_bar(stat = "identity")
+```
+
+The total number of Stunted 0-<6 Months cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total Stunted 24-59 months Cases
+```{r}
+ggplot(yr, aes(x=year,y= `Total Stunted 24-59 Months`, fill=year))+geom_bar(stat = "identity")
+```
+The total number of Stunted 24-59 Months cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total underweight 0-<6 months
+```{r}
+ggplot(yr, aes(x=year,y= `Total underweight 0-<6 months`, fill=year))+geom_bar(stat = "identity")
+```
+
+The total number of underweight 0-<6 months cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total underweight 6-23 months
+```{r}
+ggplot(yr, aes(x=year,y= `Total  Underweight 6-23 monnths`, fill=year))+geom_bar(stat = "identity")
+```
+The total number of underweight 6-23 months cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+####Total underweight 24-59 months
+```{r}
+ggplot(yr, aes(x=year,y= `Total underweight 24-59 months`, fill=year))+geom_bar(stat = "identity")
+```
+The total number of underweight 24-59 months cases increased between the years 2021 and 2022.That upward trend seemed to carry on into 2023, since by June 2023, the numbers had already passed half 2022's tally.
+
+
+### Numerical Variable Averages by Month
+```{r}
+mt<-data%>%group_by(month)%>%summarise("Average Dewormed"=mean(`Total Dewormed`),"Average Diarrhoea Cases"=mean(`diarrhoea cases`),"Average underweight 0-<6 months"=mean(`Underweight 0-<6 months`), "Average  Underweight 6-23 months"=mean(`Underweight 6-23 months`), "Average underweight 24-59 months"=mean(`Underweight 24-59 Months`), "Average Acute Malnutrition"=mean(`Acute Malnutrition`, na.rm=TRUE),"Average Stunted 6-23 Months"=mean(`stunted 6-23 months`,na.rm=TRUE), "Average Stunted 0-<6 months"=mean(`stunted 0-<6 months`, na.rm=TRUE), "Average Stunted 24-59 Months"=mean(`stunted 24-59 months`, na.rm=TRUE))
+mt <- arrange(mt, match(month, month.abb))
+data.table(mt)
+```
+
+#### Visualizing the above information
+```{r}
+library(reshape2)
+mt_long <- melt(mt, id.vars = "month")
+
+ggplot(mt_long, aes(x = month, y = value, fill = variable)) +geom_bar(stat = "identity", position = "dodge") +labs(title = "Monthly Averages",x = "Month",y = "Average Value",
+       fill = "Metric")
+```
+
+### Summaries of The Metrics by County
+```{r}
+ct<-data%>%group_by(county)%>%summarise("Total Dewormed"=sum(`Total Dewormed`),"Diarrhoea Cases"=sum(`diarrhoea cases`),"Total underweight 0-<6 months"=sum(`Underweight 0-<6 months`), "Total  Underweight 6-23 monnths"=sum(`Underweight 6-23 months`), "Total underweight 24-59 months"=sum(`Underweight 24-59 Months`), "Total Acute Malnutrition"=sum(`Acute Malnutrition`, na.rm=TRUE),"Total Stunted 6-23 Months"=sum(`stunted 6-23 months`,na.rm=TRUE), "Total Stunted 0-<6 months"=sum(`stunted 0-<6 months`, na.rm=TRUE), "Total Stunted 24-59 Months"=sum(`stunted 24-59 months`, na.rm=TRUE))
+data.table(ct)
+```
+
+```{r}
+ct$cnty<-ct$county
+ct$cnty<-gsub(" county$", "", ct$cnty, ignore.case = TRUE)
+ct$cnty<-gsub("Elgeyo Marakwet", "Elgeyo-Marakwet", ct$cnty, ignore.case = TRUE)
+ct$cnty<-gsub("Muranga", "Murang'a", ct$cnty, ignore.case = TRUE)
+ct$cnty<-gsub("Tharaka Nithi", "Tharaka-Nithi", ct$cnty, ignore.case = TRUE)
+
+```
+
+### Map Showing the Number of Children Dewormed by County
+```{r}
+# Load required libraries
+library(maptools)
+library(raster)
+library(tmap)
+library(rgdal)
+
+# Get Kenya's administrative boundary data
+Kenya <- getData("GADM", country = "KE", level = 0)
+Kenya1 <- getData("GADM", country = "KE", level = 1)
+Kenya1_UTM <- spTransform(Kenya1, CRS("+init=EPSG:32737"))
+
+# Assuming ct is your dataframe with county-level data, and "NAME_1" is the column containing county names
+ct$NAME_1 <- toupper(ct$cnty) # Ensure the county names are in the same format as in Kenya1_UTM@data
+
+# Merge the ct dataframe with Kenya1_UTM@data based on county names
+Kenya1_UTM@data <- merge(Kenya1_UTM@data, ct, by.x = "NAME_1", by.y = "cnty", all.x = TRUE)
+
+# Plot the choropleth map using tmap with Kenya1_UTM@data
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total Dewormed", title = "Number Dewormed", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Children Dewormed by County",legend.position = c("right", "bottom"))
+
+```
+
+### Map Showing the Number of Diarrhoea Cases by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Diarrhoea Cases", title = "Number of Diarrhoea Cases ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Diarrhoea Cases by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Underweight Children between 0-<6 Months by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total underweight 0-<6 months", title = "Number of Underweight Children between 0-<6 Months ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Underweight Children between 0-<6 Months by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Underweight Children between 6-23 Months by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total  Underweight 6-23 monnths", title = "Number of Underweight Children between 6-23 Months ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Underweight Children between 6-23 Months by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Underweight Children between 24-59 Months by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total underweight 24-59 months", title = "Number of Underweight Children between 24-59 Months ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Underweight Children between 24-59 Months by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Acute Malnutrition Incidences by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total Acute Malnutrition", title = "Number of Acute Malnutrition Incidences ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Acute Malnutrition Incidences by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Stunted Children Between 6-23 Months by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total Stunted 6-23 Months", title = "Number of Stunted Children Between 6-23 Months ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Stunted Children Between 6-23 Months by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Stunted Children Between 0-<6 Months by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total Stunted 0-<6 months", title = "Number of Stunted Children Between 0-<6 Months ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Stunted Children Between 0-<6 Months by County",legend.position = c("right", "bottom"))
+```
+
+### Map Showing the Total Number of Stunted Children Between 24-59 Months by County
+```{r}
+tm_shape(Kenya1_UTM) +tm_borders() +tm_fill("Total Stunted 24-59 Months", title = "Number of Stunted Children Between 24-59 Months ", palette = "viridis") +tm_layout(title = "Choropleth Map of Number of Stunted Children Between 24-59 Months by County",legend.position = c("right", "bottom"))
+```
+
+
+# Research Question
+How do the trends in the various child health indicators differ between marginalized and non-marginalized counties in Kenya?
+
+A report by the Commission for Revenue Allocation defines marginalization as a process of social exclusion from the dominant socio-economic, cultural and political structure. The report adds that marginalization is a consequence of a skewed process of the distribution of scarce resources.   
+The report determined that the five most marginalized counties in Kenya are Turkana, Marsabit, Mandera, Lamu and Wajir.  
+I will use these counties to investigate whether there is a difference in various child health indicators, compared to the other counties.
+
+##Selecting the marginalized counties
+```{r}
+mgz<-data%>%filter(county %in% c("Turkana County", "Marsabit County", "Mandera County", "Lamu County", "Wajir County"))
+nmg<-data%>%filter(!(county %in% c("Turkana County", "Marsabit County", "Mandera County", "Lamu County", "Wajir County")))
+```
+
+## Investigating difference in the total dewormed variable
+### Comparing means
+```{r}
+mean(mgz$`Total Dewormed`) 
+mean(nmg$`Total Dewormed`) 
+mean(mgz$`Total Dewormed`)-mean(nmg$`Total Dewormed`)
+```
+The mean for the total number of children dewormed in margialized areas is significantly lower compared to other regions, with a difference of 4018.282. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`Total Dewormed`)
+shapiro.test(nmg$`Total Dewormed`)
+t.test(mgz$`Total Dewormed`, nmg$`Total Dewormed`)
+```
+Taking 0.05 to be our level of significance. We see that our p-value is very small, significantly less that 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the total number of children dewormed in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the Acute Malnutrition variable
+### Comparing means
+```{r}
+mean(mgz$`Acute Malnutrition`, na.rm=TRUE)
+mean(nmg$`Acute Malnutrition`, na.rm=TRUE) 
+mean(nmg$`Acute Malnutrition`, na.rm=TRUE)-mean(mgz$`Acute Malnutrition`, na.rm=TRUE)
+```
+The mean for the total number of children suffering from acute malnutrition in margialized areas is significantly higher compared to other regions, with a difference of 356.8194. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`Acute Malnutrition`)
+shapiro.test(nmg$`Acute Malnutrition`)
+t.test(mgz$`Acute Malnutrition`, nmg$`Acute Malnutrition`)
+```
+Taking 0.05 to be our level of significance. We see that our p-value is very small, significantly less that 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children suffering from acute malnutrition in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the stunted 6-23 months variable
+### Comparing means
+```{r}
+mean(mgz$`stunted 6-23 months`, na.rm=TRUE) 
+mean(nmg$`stunted 6-23 months`, na.rm=TRUE) 
+mean(mgz$`stunted 6-23 months`, na.rm=TRUE)-mean(nmg$`stunted 6-23 months`, na.rm=TRUE)
+```
+The mean for the total number of children with stunted growth between 6-23 months in margialized areas islower compared to other regions, with a difference of 40.62654. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`stunted 6-23 months`)
+shapiro.test(nmg$`stunted 6-23 months`)
+t.test(mgz$`stunted 6-23 months`, nmg$`stunted 6-23 months`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is larger than 0.05. We therefore fail to reject the null hypothesis(equality of means) and conclude that there is no significant difference between the number of children suffering from stunted growth 6-23 months in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the stunted 0-<6 months variable
+### Comparing means
+```{r}
+mean(mgz$`stunted 0-<6 months`, na.rm=TRUE) 
+mean(nmg$`stunted 0-<6 months`, na.rm=TRUE) 
+mean(mgz$`stunted 0-<6 months`, na.rm=TRUE)-mean(nmg$`stunted 0-<6 months`, na.rm=TRUE)
+```
+The mean for the total number of children with stunted growth between 0-<6 months in margialized areas is lower compared to other regions, with a difference of 64.66314. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`stunted 0-<6 months`)
+shapiro.test(nmg$`stunted 0-<6 months`)
+t.test(mgz$`stunted 0-<6 months`, nmg$`stunted 0-<6 months`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is less than 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children suffering from stunted growth 0-<6 months in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the stunted 24-59 months variable
+### Comparing means
+```{r}
+mean(mgz$`stunted 24-59 months`, na.rm=TRUE) 
+mean(nmg$`stunted 24-59 months`, na.rm=TRUE) 
+mean(mgz$`stunted 24-59 months`, na.rm=TRUE)-mean(nmg$`stunted 24-59 months`, na.rm=TRUE)
+```
+The mean for the total number of children with stunted growth between 24-59 months in margialized areas is significantly higher compared to other regions, with a difference of 190.3722. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`stunted 24-59 months`)
+shapiro.test(nmg$`stunted 24-59 months`)
+t.test(mgz$`stunted 24-59 months`, nmg$`stunted 24-59 months`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is less than 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children suffering from stunted growth 24-59 months in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the diarrhoea cases variable
+### Comparing means
+```{r}
+mean(mgz$`diarrhoea cases`, na.rm=TRUE) 
+mean(nmg$`diarrhoea cases`, na.rm=TRUE) 
+mean(mgz$`diarrhoea cases`, na.rm=TRUE)-mean(nmg$`diarrhoea cases`, na.rm=TRUE)
+```
+The mean for the total number of children with diarrhoea cases reported in margialized areas is significantly higher compared to other regions, with a difference of 1204.69. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`diarrhoea cases`)
+shapiro.test(nmg$`diarrhoea cases`)
+t.test(mgz$`diarrhoea cases`, nmg$`diarrhoea cases`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is less than 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children with diarrhoea cases reported in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the Underweight 0-<6 months variable
+### Comparing means
+```{r}
+mean(mgz$`Underweight 0-<6 months`, na.rm=TRUE)
+mean(nmg$`Underweight 0-<6 months`, na.rm=TRUE) 
+mean(mgz$`Underweight 0-<6 months`, na.rm=TRUE)-mean(nmg$`Underweight 0-<6 months`, na.rm=TRUE)
+```
+The mean for the total number of children underweight between 0-6 months reported in marginalized areas is lower compared to other regions, with a difference of 82.74714. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`Underweight 0-<6 months`)
+shapiro.test(nmg$`Underweight 0-<6 months`)
+t.test(mgz$`Underweight 0-<6 months`, nmg$`Underweight 0-<6 months`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is less than 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children underweight between 0-6 months in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the Underweight 6-23 months variable
+### Comparing means
+```{r}
+mean(mgz$`Underweight 6-23 months`, na.rm=TRUE) 
+mean(nmg$`Underweight 6-23 months`, na.rm=TRUE) 
+mean(mgz$`Underweight 6-23 months`, na.rm=TRUE)-mean(nmg$`Underweight 6-23 months`, na.rm=TRUE)
+```
+The mean for the total number of children underweight between 6-23 months reported in marginalized areas is higher compared to other regions, with a difference of 246.288. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`Underweight 6-23 months`)
+shapiro.test(nmg$`Underweight 6-23 months`)
+t.test(mgz$`Underweight 6-23 months`, nmg$`Underweight 6-23 months`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is less than 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children underweight between 6-23 months in marginalized and non-marginalized regions.
+
+
+## Investigating difference in the Underweight 24-59  months variable
+### Comparing means
+```{r}
+mean(mgz$`Underweight 24-59 Months`, na.rm=TRUE) 
+mean(nmg$`Underweight 24-59 Months`, na.rm=TRUE) 
+mean(mgz$`Underweight 24-59 Months`, na.rm=TRUE)-mean(nmg$`Underweight 24-59 Months`, na.rm=TRUE)
+```
+The mean for the total number of children underweight between 24-59 months reported in marginalized areas is higher compared to other regions, with a difference of 897.9045. 
+
+### t-test 
+```{r}
+#First we test for normality
+shapiro.test(mgz$`Underweight 24-59 Months`)
+shapiro.test(nmg$`Underweight 24-59 Months`)
+t.test(mgz$`Underweight 24-59 Months`, nmg$`Underweight 24-59 Months`)
+```
+
+Taking 0.05 to be our level of significance. We see that our p-value is less than 0.05. We therefore reject the null hypothesis(equality of means) and conclude that there is a significant difference between the number of children underweight between 24-59 months in marginalized and non-marginalized regions.
+
+
+## Findings.
+My research question prompted me to investigate how the various child health indicators difer betwee marginalized and non-marginalized counties.  
+I decided to do t-tests for the numerical variables, having split the counties into two categories: marginalized and non-marginalized.  
+The results showed that there are inndeed differences in child health inndicators across the two groups of counties. Marginalized counties generally had poor numbers when compared to the counties. 
+For instance, when considering the Total Dewormed variable, marginalized areas had a lower number compared to the other counties. This difference is significant.  
+For the acute malnutrition variable, marginalized counties had higher children reported, compared to the non-marginalized counties. The difference was significant.  
+For the stunted 6-23 months variable, non-marginalized counties actually had a higher tally than the marginalized ones, but this difference was not significant.  
+For the stunted 0-6 months variable, non-marginalized counties also had higher tallies, and the difference in this case was significant.  
+For the stunted 24-59 months variable, marginalized counties recorded significantly higher figures compared to the rest, and this difference was statistically significant.  
+For the diarrhoea cases variable, marginalized counties recorded higher figures again, with the difference being statistically significant.  
+For the underweight 0-<6 months variable, the non-marginalized counties posted higher figures, and this result proved to be statistically significant.  
+For the underweight 6-23 months variable, marginalized counties had more cases reported, and this result was also statistically significant.  
+For the underweight 24-59 months variable, the marginalized counties again posted higher tallies than the non-marginalized ones, with the result also being statistically significant.
+
+## Conclusion.
+While the non-marginalized counties also showed cause for concern with regard to various child health indicators compared to the marginalized counties, it is evident that marginalized counties indeed suffer heavily, and as a result more work must be done in such areas, so as to bridge the gap between the two groups of counties.
+
+
+# Adendum
+##Running linear regression to depict the relationships between some of the variables
+
+```{r}
+mdl1<-lm(`Acute Malnutrition`~., data=data[, -c(1,2)])
+summary(mdl1)
+```
+
+
+
+
+
+
+
+
+
+
+
+
